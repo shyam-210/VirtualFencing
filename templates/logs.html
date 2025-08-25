@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Logs - IntrusionGuard{% endblock %}
+
+{% block content %}
+<h2 class="text-3xl font-bold mb-8">Intrusion Logs</h2>
+
+<div class="bg-white shadow-md rounded-xl p-6">
+  <table class="w-full border-collapse">
+    <thead>
+      <tr class="bg-violet-100 text-violet-700">
+        <th class="p-3 text-left">Timestamp</th>
+        <th class="p-3 text-left">Camera</th>
+        <th class="p-3 text-left">Event</th>
+        <th class="p-3 text-left">Snapshot</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for event in events %}
+    <tr class="border-t hover:bg-gray-50">
+    <td class="p-3">{{ event.timestamp }}</td>
+    <td class="p-3">{{ event.cam_id }}</td>
+    <td class="p-3">Fence Crossing</td>  {# static text or adjust model later #}
+
+    <td class="p-3">
+        {% if event.image_path %}
+            <img src="{{ url_for('static', filename=event.image_path.replace('\\','/')) }}" class="h-16 rounded">
+
+        {% else %}
+            -
+        {% endif %}
+    </td>
+    </tr>
+    {% endfor %}  
+    </tbody>
+  </table>
+</div>
+{% endblock %}

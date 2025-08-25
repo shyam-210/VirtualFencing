@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}IntrusionGuard{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    function toggleMenu() {
+      document.getElementById("mobile-menu").classList.toggle("hidden");
+    }
+  </script>
+
+
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+  <!-- Navbar -->
+  <nav class="bg-violet-700 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <!-- Logo -->
+      <h1 class="text-2xl font-bold">IntrusionGuard</h1>
+
+      <!-- Desktop Menu -->
+      <ul class="hidden md:flex space-x-6">
+        <li><a href="{{ url_for('main.home') }}" class="hover:text-violet-300">Home</a></li>
+        <li><a href="{{ url_for('main.camera') }}" class="hover:text-violet-300">Camera</a></li>
+        <li><a href="{{ url_for('main.logs') }}" class="hover:text-violet-300">Logs</a></li>
+      </ul>
+
+      <!-- Mobile Hamburger -->
+      <button class="md:hidden focus:outline-none" onclick="toggleMenu()">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" 
+             viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" 
+                d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden px-4 pb-4">
+      <ul class="space-y-4">
+        <li><a href="{{ url_for('main.home') }}" class="block hover:text-violet-300">Home</a></li>
+        <li><a href="{{ url_for('main.camera') }}" class="block hover:text-violet-300">Camera</a></li>
+        <li><a href="{{ url_for('main.logs') }}" class="block hover:text-violet-300">Logs</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Page Content -->
+  <main class="max-w-7xl mx-auto px-6 py-10">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

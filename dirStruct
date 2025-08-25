@@ -1,0 +1,48 @@
+smart-surveillance/
+│── app/
+│   ├── __init__.py          # Initialize Flask app, DB, blueprints
+│   ├── config.py            # Configurations (Dev, Prod)
+│   ├── models.py            # Database models
+│   ├── extensions.py        # For initializing db, login_manager, etc.
+│   │
+│   ├── routes/              # App routes (modularized blueprints)
+│   │   ├── __init__.py
+│   │   ├── dashboard.py     # Dashboard routes
+│   │   ├── cameras.py       # Camera feeds & snapshots
+│   │   ├── logs.py          # Intrusion logs
+│   │   ├── auth.py          # Authentication (optional)
+│   │
+│   ├── services/            # ML, notification, utility services
+│   │   ├── __init__.py
+│   │   ├── detection.py     # Object detection / intrusion logic
+│   │   ├── notifications.py # WhatsApp/SMS/email alerts
+│   │   ├── storage.py       # Save/retrieve snapshots
+│   │
+│   ├── static/              # Static files
+│   │   ├── css/             # Tailwind generated CSS
+│   │   ├── js/              # Custom JS (if any)
+│   │   ├── images/          # Snapshots & assets
+│   │
+│   ├── templates/           # HTML Templates (Jinja + Tailwind)
+│   │   ├── base.html        # Common layout
+│   │   ├── dashboard.html   # Dashboard with camera feeds
+│   │   ├── logs.html        # Logs page with search/filter
+│   │   ├── cameras.html     # List of cameras
+│   │   ├── login.html       # Login page (optional)
+│   │
+│   └── utils/               # Helpers
+│       ├── __init__.py
+│       ├── image_utils.py   # Enhance/resize/compress images
+│       ├── time_utils.py    # Time formatting helpers
+│
+│── migrations/              # Flask-Migrate (DB migrations)
+│
+│── instance/                # Local DB configs (ignored by Git)
+│
+│── tests/                   # Unit tests
+│
+│── venv/                    # Virtual environment (ignored by Git)
+│
+│── run.py                   # Main entry point
+│── requirements.txt         # Dependencies
+│── README.md                # Project documentation

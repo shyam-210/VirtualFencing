@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Home - IntrusionGuard{% endblock %}
+
+{% block content %}
+<h2 class="text-3xl font-bold mb-8 text-center">Welcome to IntrusionGuard</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <a href="{{ url_for('main.camera') }}" class="bg-purple-100 hover:bg-purple-200 p-6 rounded-xl shadow-md">
+    <h3 class="text-xl font-semibold text-purple-700">📷 Camera</h3>
+    <p class="text-sm text-gray-600 mt-2">View and manage live camera feeds.</p>
+  </a>
+
+  <a href="{{ url_for('main.logs') }}" class="bg-indigo-100 hover:bg-indigo-200 p-6 rounded-xl shadow-md">
+    <h3 class="text-xl font-semibold text-indigo-700">📝 Logs</h3>
+    <p class="text-sm text-gray-600 mt-2">Check intrusion logs & alerts.</p>
+  </a>
+
+  <a href="{{ url_for('main.saved_snaps') }}" class="bg-green-100 hover:bg-green-200 p-6 rounded-xl shadow-md">
+    <h3 class="text-xl font-semibold text-green-700">📸 Saved Snaps</h3>
+    <p class="text-sm text-gray-600 mt-2">View snapshots of detected intrusions.</p>
+  </a>
+</div>
+{% endblock %}

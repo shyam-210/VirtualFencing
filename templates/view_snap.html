@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}View Snap{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+  <img id="snap-img"
+       src="{{ url_for('static', filename=snap.image_path) }}"
+       alt="Snap"
+       class="max-w-full max-h-[80vh] rounded-xl shadow-lg transition-transform duration-300">
+  
+  <div class="flex space-x-4 mt-4">
+    <button id="zoom-in" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">Zoom In</button>
+    <button id="zoom-out" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">Zoom Out</button>
+    <button id="enhance" class="px-4 py-2 bg-green-600 rounded hover:bg-green-700">Enhance</button>
+    <a href="{{ url_for('main.saved_snaps') }}"
+       class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Back</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const img = document.getElementById('snap-img');
+  let scale = 1;
+
+  document.getElementById('zoom-in').onclick = () => {
+    scale += 0.1;
+    img.style.transform = `scale(${scale})`;
+  };
+
+  document.getElementById('zoom-out').onclick = () => {
+    scale = Math.max(0.1, scale - 0.1);
+    img.style.transform = `scale(${scale})`;
+  };
+
+  document.getElementById('enhance').onclick = async () => {
+    const response = await fetch(`/enhance_snap/{{ snap.id }}`);
+    const data = await response.json();
+    img.src = `data:image/jpeg;base64,${data.enhanced_image}`;
+  };
+
+  
+});
+</script>
+{% endblock %}

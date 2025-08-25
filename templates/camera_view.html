@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Camera View{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row gap-6">
+    <div class="w-full md:w-2/3 relative">
+        <img id="video-feed" src="{{ url_for('main.video_feed_detect', cam_id=cam_id|urlencode) }}" 
+             class="rounded-lg border-2 border-gray-300 shadow-lg w-full">
+        <canvas id="draw-canvas" class="absolute top-0 left-0 w-full h-full" style="z-index: 10;"></canvas>
+    </div>
+
+    <div class="w-full md:w-1/3 bg-gray-50 p-6 rounded-lg shadow-md">
+        <h3 class="text-2xl font-bold mb-4 text-gray-800">Fence Configuration</h3>
+        <div class="space-y-3">
+            <button id="draw-line" class="w-full bg-violet-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-violet-700 transition">Draw Fence Line</button>
+            <button id="reset-line" class="w-full bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-gray-700 transition">Reset</button>
+            <button id="save-line" class="w-full bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition">Save Fence</button>
+        </div>
+        <p id="status" class="mt-4 text-sm font-medium text-gray-600 h-6"></p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('draw-canvas');
+    const ctx = canvas.getContext('2d');
+    const img = document.getElementById('video-feed');
+    const statusEl = document.getElementById('status');
+
+    const videoNativeWidth = {{ video_width }};
+    const videoNativeHeight = {{ video_height }};
+
+    let isDrawingMode = false;
+    let isDrawing = false;
+    let line = {}; // Will store coordinates in the NATIVE video resolution
+
+    // --- Core Drawing and Scaling Functions ---
+    
+    function drawLineOnCanvas() {
+        // If line object is empty, just clear the canvas.
+        if (!line.x1) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            return;
+        }
+        
+        const scaleX = canvas.width / videoNativeWidth;
+        const scaleY = canvas.height / videoNativeHeight;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'rgba(220, 38, 38, 0.9)';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([10, 8]);
+        ctx.beginPath();
+        ctx.moveTo(line.x1 * scaleX, line.y1 * scaleY);
+        ctx.lineTo(line.x2 * scaleX, line.y2 * scaleY);
+        ctx.stroke();
+    }
+    
+    function getNativeCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const scaleX = videoNativeWidth / rect.width;
+        const scaleY = videoNativeHeight / rect.height;
+
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    function syncCanvasAndDraw() {
+        canvas.width = img.clientWidth;
+        canvas.height = img.clientHeight;
+        drawLineOnCanvas();
+    }
+
+    // --- Event Handlers ---
+
+    function startDraw(e) {
+        if (!isDrawingMode) return;
+        isDrawing = true;
+        const pos = getNativeCoords(e);
+        line = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
+        drawLineOnCanvas();
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        const pos = getNativeCoords(e);
+        line.x2 = pos.x;
+        line.y2 = pos.y;
+        drawLineOnCanvas();
+    }
+
+    function endDraw(e) {
+        if (!isDrawing) return;
+        const pos = getNativeCoords(e);
+        line.x2 = pos.x;
+        isDrawing = false;
+        isDrawingMode = false;
+        drawLineOnCanvas();
+        statusEl.innerText = 'Line drawn. Click Save to confirm.';
+    }
+
+    // <<< NEW FUNCTION >>>
+    // This function forces the video feed to reload from the server.
+    function reloadVideoFeed() {
+        // Appending a timestamp makes the URL unique, forcing the browser to re-request it.
+        const timestamp = new Date().getTime();
+        img.src = `{{ url_for('main.video_feed_detect', cam_id=cam_id|urlencode) }}?t=${timestamp}`;
+    }
+
+    // --- Button Actions ---
+
+    document.getElementById('draw-line').onclick = () => {
+        isDrawingMode = true;
+        statusEl.innerText = 'Click and drag on the video feed to draw.';
+    };
+    
+    // <<< MODIFIED to be async and call the backend >>>
+    document.getElementById('reset-line').onclick = async () => {
+        line = {};
+        drawLineOnCanvas(); // Immediately clear the visual canvas
+        statusEl.innerText = 'Resetting...';
+
+        // Tell the backend to delete the line by sending null values
+        const resp = await fetch('{{ url_for("main.save_line", cam_id=cam_id) }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ x1: null, y1: null, x2: null, y2: null })
+        });
+        const data = await resp.json();
+        statusEl.innerText = data.message;
+
+        // Reload the video feed to see the line disappear from the backend processing
+        reloadVideoFeed();
+    };
+    
+    // <<< MODIFIED to be async and reload the feed >>>
+    document.getElementById('save-line').onclick = async () => {
+        if (!line.x1) {
+            statusEl.innerText = 'Error: Draw a line first!';
+            return;
+        }
+        
+        statusEl.innerText = 'Saving...';
+
+        const resp = await fetch('{{ url_for("main.save_line", cam_id=cam_id) }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ x1: line.x1, y1: line.y1, x2: line.x2, y2: line.y2 })
+        });
+        const data = await resp.json();
+        statusEl.innerText = data.message;
+        
+        // Reload the video feed to see the new line appear from the backend processing
+        reloadVideoFeed();
+    };
+
+    // --- Initialization ---
+    {% if fence %}
+    line = { x1: {{ fence.line_x1 }}, y1: {{ fence.line_y1 }}, x2: {{ fence.line_x2 }}, y2: {{ fence.line_y2 }} };
+    {% endif %}
+
+    if (img.complete) {
+        syncCanvasAndDraw();
+    } else {
+        img.onload = syncCanvasAndDraw;
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', endDraw);
+    window.addEventListener('resize', syncCanvasAndDraw);
+});
+</script>
+{% endblock %}

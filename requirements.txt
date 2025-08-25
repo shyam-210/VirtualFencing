@@ -1,0 +1,16 @@
+flask
+flask_sqlalchemy
+flask_migrate
+jinja2
+opencv-python
+ultralytics
+pillow
+numpy
+scikit-image
+twilio
+requests
+python-dotenv
+webptools
+shapely
+shapely
+playsound
