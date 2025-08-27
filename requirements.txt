@@ -12,5 +12,5 @@ requests
 python-dotenv
 webptools
 shapely
-shapely
 playsound
+pytz

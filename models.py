@@ -18,3 +18,4 @@ class FenceCrossEvent(db.Model):
     cam_id = db.Column(db.String(50), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     image_path = db.Column(db.String(200), nullable=False)  # path to saved frame
+    enhanced_image_path = db.Column(db.String(200), nullable=True)  # path to enhanced frame

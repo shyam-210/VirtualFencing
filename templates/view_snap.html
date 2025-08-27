@@ -1,46 +1,332 @@
 {% extends "base.html" %}
 {% block title %}View Snap{% endblock %}
 
-{% block content %}
-<div class="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-  <img id="snap-img"
-       src="{{ url_for('static', filename=snap.image_path) }}"
-       alt="Snap"
-       class="max-w-full max-h-[80vh] rounded-xl shadow-lg transition-transform duration-300">
+{% block head %}
+<style>
+  body {
+    overflow: hidden;
+  }
   
-  <div class="flex space-x-4 mt-4">
-    <button id="zoom-in" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">Zoom In</button>
-    <button id="zoom-out" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">Zoom Out</button>
-    <button id="enhance" class="px-4 py-2 bg-green-600 rounded hover:bg-green-700">Enhance</button>
-    <a href="{{ url_for('main.saved_snaps') }}"
-       class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Back</a>
+  #image-container img {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  #image-wrapper {
+    touch-action: none;
+  }
+  
+  .image-viewer {
+    background: radial-gradient(circle at center, #1f2937 0%, #111827 100%);
+  }
+  
+  .controls-panel {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  .button-glow:hover {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+  }
+  
+  .enhance-button-glow:hover {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+  <!-- Main image viewer container -->
+  <div class="relative w-11/12 h-[85vh] image-viewer rounded-lg shadow-2xl border border-gray-800">
+    <!-- Toolbar -->
+    <div class="absolute top-4 left-4 right-4 z-10 bg-gray-800/80 p-3 rounded-lg flex items-center justify-between controls-panel border border-gray-700">
+      <div class="flex items-center space-x-3">
+        <span class="text-sm font-medium bg-gray-900/50 px-3 py-1 rounded-full">Zoom: <span id="zoom-level" class="text-blue-400">100%</span></span>
+        <div class="h-4 border-l border-gray-600"></div>
+        <span id="image-size" class="text-sm bg-gray-900/50 px-3 py-1 rounded-full"></span>
+        <div class="h-4 border-l border-gray-600"></div>
+        <span class="text-sm bg-gray-900/50 px-3 py-1 rounded-full">{{ snap.display_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button id="reset-view" class="text-sm bg-blue-600 hover:bg-blue-700 px-4 py-1.5 rounded-lg transition-all duration-300 button-glow">
+          Reset View
+        </button>
+      </div>
+    </div>
+    
+    <!-- Image container with better overflow handling -->
+    <div id="image-container" class="absolute inset-0 overflow-hidden rounded-lg">
+      <div id="image-wrapper" class="absolute inset-0 flex items-center justify-center cursor-move">
+        <img id="snap-img"
+             src="{{ url_for('static', filename=snap.image_path) }}"
+             alt="Snapshot"
+             class="max-w-none max-h-none transition-all duration-200 rounded-lg shadow-xl"
+             style="transform-origin: center center; will-change: transform"
+             crossorigin="anonymous">
+      </div>
+    </div>
+  </div>
+  
+  <!-- Control panel -->
+  <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-20">
+    <div class="flex items-center space-x-6 bg-gray-800/90 px-6 py-4 rounded-xl shadow-2xl controls-panel border border-gray-700">
+      <!-- Zoom controls -->
+      <div class="flex items-center space-x-4">
+        <button id="zoom-out" 
+                class="p-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-300 button-glow">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"/>
+          </svg>
+        </button>
+        <button id="zoom-in" 
+                class="p-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-300 button-glow">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Divider -->
+      <div class="h-8 border-l-2 border-gray-700"></div>
+      
+      <!-- Enhancement controls -->
+      <div class="flex items-center space-x-4">
+        <button id="enhance" 
+                class="flex items-center px-5 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all duration-300 enhance-button-glow">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span class="font-medium">Enhance</span>
+        </button>
+        <a href="{{ url_for('main.saved_snaps') }}" 
+           class="flex items-center px-5 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-all duration-300">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          <span class="font-medium">Back</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loading-overlay" 
+       class="fixed inset-0 bg-black/80 hidden items-center justify-center backdrop-blur">
+    <div class="bg-gray-800/90 rounded-2xl p-8 shadow-2xl flex flex-col items-center border border-gray-700 controls-panel">
+      <div class="relative w-20 h-20">
+        <div class="absolute inset-0 rounded-full border-4 border-emerald-500/25"></div>
+        <div class="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
+      </div>
+      <p class="mt-6 text-xl font-medium text-emerald-400">Enhancing Image</p>
+      <p class="mt-2 text-sm text-gray-400">This may take a few moments</p>
+    </div>
+  </div>
+
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const img = document.getElementById('snap-img');
-  let scale = 1;
-
-  document.getElementById('zoom-in').onclick = () => {
-    scale += 0.1;
-    img.style.transform = `scale(${scale})`;
-  };
-
-  document.getElementById('zoom-out').onclick = () => {
-    scale = Math.max(0.1, scale - 0.1);
-    img.style.transform = `scale(${scale})`;
-  };
-
-  document.getElementById('enhance').onclick = async () => {
-    const response = await fetch(`/enhance_snap/{{ snap.id }}`);
-    const data = await response.json();
-    img.src = `data:image/jpeg;base64,${data.enhanced_image}`;
-  };
-
+class ImageViewer {
+  constructor() {
+    // DOM Elements
+    this.container = document.getElementById('image-container');
+    this.wrapper = document.getElementById('image-wrapper');
+    this.img = document.getElementById('snap-img');
+    this.zoomLevelEl = document.getElementById('zoom-level');
+    this.imageSizeEl = document.getElementById('image-size');
+    
+    if (!this.container || !this.wrapper || !this.img || !this.zoomLevelEl || !this.imageSizeEl) {
+      throw new Error('Required elements not found');
+    }
+    
+    // State
+    this.scale = 1;
+    this.translateX = 0;
+    this.translateY = 0;
+    this.isDragging = false;
+    this.lastX = 0;
+    this.lastY = 0;
+    
+    // Handle image load
+    this.img.addEventListener('load', () => this.updateImageInfo());
+    
+    // Bind methods
+    this.updateTransform = this.updateTransform.bind(this);
+    this.startDrag = this.startDrag.bind(this);
+    this.onDrag = this.onDrag.bind(this);
+    this.stopDrag = this.stopDrag.bind(this);
+    this.onWheel = this.onWheel.bind(this);
+    this.resetView = this.resetView.bind(this);
+    
+    // Initialize
+    this.setupEventListeners();
+    this.updateImageInfo();
+    requestAnimationFrame(this.updateTransform);
+  }
   
+  setupEventListeners() {
+    // Mouse controls
+    this.wrapper.addEventListener('mousedown', this.startDrag);
+    window.addEventListener('mousemove', this.onDrag);
+    window.addEventListener('mouseup', this.stopDrag);
+    
+    // Touch controls
+    this.wrapper.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        this.startDrag(e.touches[0]);
+      }
+    });
+    
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1) {
+        e.preventDefault();
+        this.onDrag(e.touches[0]);
+      }
+    });
+    
+    window.addEventListener('touchend', this.stopDrag);
+    
+    // Zoom controls
+    this.container.addEventListener('wheel', this.onWheel, { passive: false });
+    document.getElementById('zoom-in').addEventListener('click', () => this.zoom(0.1));
+    document.getElementById('zoom-out').addEventListener('click', () => this.zoom(-0.1));
+    document.getElementById('reset-view').addEventListener('click', this.resetView);
+  }
+  
+  updateImageInfo() {
+    this.img.onload = () => {
+      this.imageSizeEl.textContent = `${this.img.naturalWidth}×${this.img.naturalHeight}px`;
+    };
+  }
+  
+  updateTransform() {
+    const transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
+    this.wrapper.style.transform = transform;
+    this.zoomLevelEl.textContent = `${Math.round(this.scale * 100)}%`;
+  }
+  
+  startDrag(e) {
+    this.isDragging = true;
+    this.lastX = e.clientX;
+    this.lastY = e.clientY;
+    this.wrapper.style.cursor = 'grabbing';
+  }
+  
+  onDrag(e) {
+    if (!this.isDragging) return;
+    
+    const dx = e.clientX - this.lastX;
+    const dy = e.clientY - this.lastY;
+    
+    this.translateX += dx;
+    this.translateY += dy;
+    
+    this.lastX = e.clientX;
+    this.lastY = e.clientY;
+    
+    this.wrapper.style.transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
+    this.zoomLevelEl.textContent = `${Math.round(this.scale * 100)}%`;
+  }
+  
+  stopDrag() {
+    this.isDragging = false;
+    this.wrapper.style.cursor = 'move';
+  }
+  
+  zoom(delta, centerX = null, centerY = null) {
+    const rect = this.container.getBoundingClientRect();
+    const x = centerX ?? (rect.left + rect.width / 2);
+    const y = centerY ?? (rect.top + rect.height / 2);
+    
+    const newScale = Math.max(0.1, Math.min(5, this.scale * (1 + delta)));
+    
+    if (newScale !== this.scale) {
+      const scaleRatio = newScale / this.scale;
+      const containerX = x - rect.left;
+      const containerY = y - rect.top;
+      
+      this.translateX = containerX - (containerX - this.translateX) * scaleRatio;
+      this.translateY = containerY - (containerY - this.translateY) * scaleRatio;
+      this.scale = newScale;
+      
+      requestAnimationFrame(this.updateTransform);
+    }
+  }
+  
+  onWheel(e) {
+    e.preventDefault();
+    const delta = -Math.sign(e.deltaY) * 0.1;
+    this.zoom(delta, e.clientX, e.clientY);
+  }
+  
+  resetView() {
+    this.scale = 1;
+    this.translateX = 0;
+    this.translateY = 0;
+    requestAnimationFrame(this.updateTransform);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM Content Loaded');
+  
+  try {
+    // Initialize viewer
+    const viewer = new ImageViewer();
+    console.log('Components initialized');
+
+    // Set up enhancement handling
+  const loadingOverlay = document.getElementById('loading-overlay');
+  const enhanceBtn = document.getElementById('enhance');
+  
+  if (enhanceBtn) {
+    enhanceBtn.addEventListener('click', async () => {
+      try {
+        loadingOverlay.style.display = 'flex';
+        enhanceBtn.disabled = true;
+        enhanceBtn.classList.add('opacity-50');
+        
+        const response = await fetch('{{ url_for("main.enhance_snap", snap_id=snap.id) }}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // Create a new image element to preload the enhanced image
+          const newImg = new Image();
+          newImg.onload = () => {
+            // Update the source with the enhanced image
+            viewer.img.src = `${data.enhanced_path}?t=${new Date().getTime()}`; // Add timestamp to prevent caching
+            window.toast.show('success', 'Image enhanced successfully');
+          };
+          newImg.src = `${data.enhanced_path}?t=${new Date().getTime()}`; // Add timestamp to prevent caching
+        } else {
+          throw new Error(data.message || 'Enhancement failed');
+        }
+      } catch (error) {
+        console.error('Enhancement error:', error);
+        window.toast.show('error', error.message || 'Failed to enhance image');
+      } finally {
+        loadingOverlay.style.display = 'none';
+        enhanceBtn.disabled = false;
+        enhanceBtn.classList.remove('opacity-50');
+      }
+    });
+  }
+  
+  } catch (error) {
+    console.error('Error initializing components:', error);
+  }
 });
 </script>
 {% endblock %}

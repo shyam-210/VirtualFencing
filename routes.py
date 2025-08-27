@@ -7,6 +7,9 @@ from extensions import db
 from models import CameraFence, FenceCrossEvent
 from flask import current_app
 import base64
+from image_enhancement import enhance_image
+from datetime import datetime
+import pytz
 
 routes_bp = Blueprint('main', __name__)
 
@@ -27,8 +30,16 @@ def home():
 
 @routes_bp.route('/logs')
 def logs():
+    # Get the local timezone
+    local_tz = pytz.timezone('Asia/Kolkata')  # Change this to your local timezone
+    
     with current_app.app_context():
         events = FenceCrossEvent.query.order_by(FenceCrossEvent.timestamp.desc()).all()
+        
+        # Convert UTC timestamps to local time for display
+        for event in events:
+            event.display_time = event.timestamp.replace(tzinfo=pytz.UTC).astimezone(local_tz)
+            
     return render_template('logs.html', events=events)
 
 @routes_bp.route('/camera')
@@ -72,6 +83,9 @@ def saved_snaps():
     from collections import defaultdict
     import os
 
+    # Get the local timezone
+    local_tz = pytz.timezone('Asia/Kolkata')  # Change this to your local timezone
+
     with detection_manager.app.app_context():
         # Fetch all events ordered by newest first
         events = FenceCrossEvent.query.order_by(FenceCrossEvent.timestamp.desc()).all()
@@ -79,13 +93,66 @@ def saved_snaps():
     # Group events by date (YYYY-MM-DD)
     grouped_events = defaultdict(list)
     for event in events:
-        date_str = event.timestamp.strftime("%Y-%m-%d")
+        # Convert UTC timestamp to local time
+        local_time = event.timestamp.replace(tzinfo=pytz.UTC).astimezone(local_tz)
+        date_str = local_time.strftime("%Y-%m-%d")
+        event.display_time = local_time  # Add local time for display
         grouped_events[date_str].append(event)
 
     # Sort dates in descending order
     grouped_events = dict(sorted(grouped_events.items(), reverse=True))
 
     return render_template('saved_snaps.html', grouped_events=grouped_events)
+
+@routes_bp.route('/view_snap/<int:snap_id>')
+def view_snap(snap_id):
+    """View a single snapshot with enhancement options."""
+    # Get the local timezone
+    local_tz = pytz.timezone('Asia/Kolkata')  # Change this to your local timezone
+    
+    with detection_manager.app.app_context():
+        snap = FenceCrossEvent.query.get_or_404(snap_id)
+        snap.display_time = snap.timestamp.replace(tzinfo=pytz.UTC).astimezone(local_tz)
+    return render_template('view_snap.html', snap=snap)
+
+@routes_bp.route('/enhance_snap/<int:snap_id>', methods=['POST'])
+def enhance_snap(snap_id):
+    """Enhance a snapshot using AI-based image enhancement."""
+    try:
+        with detection_manager.app.app_context():
+            snap = FenceCrossEvent.query.get_or_404(snap_id)
+            image_path = os.path.join(current_app.static_folder, snap.image_path)
+            
+            if not os.path.exists(image_path):
+                return jsonify({'success': False, 'message': 'Image file not found'})
+            
+            # Read and enhance the image
+            enhanced_img = enhance_image(image_path)
+            
+            if enhanced_img is None:
+                return jsonify({'success': False, 'message': 'Enhancement failed'})
+                
+            # Save enhanced image
+            enhanced_path = snap.image_path.replace('.jpg', '_enhanced.jpg')
+            enhanced_full_path = os.path.join(current_app.static_folder, enhanced_path)
+            cv2.imwrite(enhanced_full_path, enhanced_img)
+            
+            # Update database
+            snap.enhanced_image_path = enhanced_path
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Image enhanced successfully',
+                'enhanced_path': url_for('static', filename=enhanced_path)
+            })
+            
+    except Exception as e:
+        print(f"Enhancement error: {str(e)}")  # Log the error
+        return jsonify({
+            'success': False,
+            'message': f'Enhancement failed: {str(e)}'
+        }), 500
 
 # --- API AND VIDEO STREAMING ---
 
@@ -164,51 +231,10 @@ def generate_detected_frames(cam_id):
 
 @routes_bp.route('/video_feed_detect/<path:cam_id>')
 def video_feed_detect(cam_id):
+    """Stream video feed with detections"""
+    if not detection_manager:
+        return "Detection manager not initialized", 500
     return Response(generate_detected_frames(cam_id),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+                   mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-@routes_bp.route('/snap/<int:snap_id>')
-def view_snap(snap_id):
-    """Show a single saved snap full-size with enhancement options."""
-    with current_app.app_context():
-        snap = FenceCrossEvent.query.get_or_404(snap_id)
-    return render_template('view_snap.html', snap=snap)
-
-
-@routes_bp.route('/enhance_snap/<int:snap_id>')
-def enhance_snap(snap_id):
-    """Enhance an image and return its URL (industry-style)."""
-    with current_app.app_context():
-        snap = FenceCrossEvent.query.get_or_404(snap_id)
-
-    img_path = os.path.join(current_app.static_folder, snap.image_path)
-    if not os.path.exists(img_path):
-        return jsonify({'error': 'Image not found'}), 404
-
-    # Create enhanced folder if it doesn't exist
-    enhanced_dir = os.path.join(current_app.static_folder, "enhanced_snaps")
-    os.makedirs(enhanced_dir, exist_ok=True)
-
-    # Build enhanced filename
-    base_name = os.path.basename(snap.image_path)
-    enhanced_path = os.path.join(enhanced_dir, f"enhanced_{base_name}")
-
-    # Avoid recomputation if already exists
-    if not os.path.exists(enhanced_path):
-        img = cv2.imread(img_path)
-
-        # Optional resize
-        max_dim = 1024
-        h, w = img.shape[:2]
-        if max(h, w) > max_dim:
-            scale_ratio = max_dim / max(h, w)
-            img = cv2.resize(img, (int(w * scale_ratio), int(h * scale_ratio)))
-
-        # Simple enhancement (OpenCV detailEnhance)
-        enhanced = cv2.detailEnhance(img, sigma_s=10, sigma_r=0.15)
-        cv2.imwrite(enhanced_path, enhanced)
-
-    # Return the URL of enhanced image
-    enhanced_url = url_for('static', filename=f"enhanced_snaps/enhanced_{base_name}")
-    return jsonify({'enhanced_url': enhanced_url})
