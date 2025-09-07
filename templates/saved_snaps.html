@@ -15,7 +15,7 @@
                class="w-full h-48 object-cover hover:scale-105 transition-transform duration-300">
           <div class="p-2 text-sm text-gray-600">
             <p>Cam ID: {{ event.cam_id }}</p>
-            <p>Time: {{ event.timestamp.strftime("%H:%M:%S") }}</p>
+            <p>Time: {{ event.display_time.strftime("%H:%M:%S") }}</p>
           </div>
         </a>
       {% endfor %}

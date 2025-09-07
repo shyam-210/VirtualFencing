@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_migrate import Migrate
 from routes import routes_bp
 from extensions import db
 import os
@@ -13,6 +14,10 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
+    
+    # Initialize migrations
+    from extensions import migrate
+    migrate.init_app(app, db)
 
     # Register blueprints
     app.register_blueprint(routes_bp)
@@ -29,4 +34,4 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True)
+    app.run(host = "0.0.0.0", debug=True)

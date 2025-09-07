@@ -2,32 +2,80 @@
 {% block title %}Logs - IntrusionGuard{% endblock %}
 
 {% block content %}
-<h2 class="text-3xl font-bold mb-8">Intrusion Logs</h2>
+<div class="space-y-6">
+  <!-- Header Section -->
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-3xl font-bold text-white mb-2">Intrusion Logs</h1>
+      <p class="text-gray-400">Complete history of security events and detections</p>
+    </div>
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2 bg-green-500/10 text-green-400 px-4 py-2 rounded-lg">
+        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        <span class="text-sm font-medium">Live Monitoring</span>
+      </div>
+    </div>
+  </div>
 
-<div class="bg-white shadow-md rounded-xl p-6">
-  <table class="w-full border-collapse">
-    <thead>
-      <tr class="bg-violet-100 text-violet-700">
-        <th class="p-3 text-left">Timestamp</th>
-        <th class="p-3 text-left">Camera</th>
-        <th class="p-3 text-left">Event</th>
-        <th class="p-3 text-left">Snapshot</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for event in events %}
-    <tr class="border-t hover:bg-gray-50">
-    <td class="p-3">{{ event.timestamp }}</td>
-    <td class="p-3">{{ event.cam_id }}</td>
-    <td class="p-3">Fence Crossing</td>  {# static text or adjust model later #}
+  <!-- Logs Table -->
+  <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-xl">
+    <!-- Table Header -->
+    <div class="p-4 border-b border-gray-700 bg-gray-800/50">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-primary-100">Event History</h2>
+        <div class="flex items-center space-x-2 text-gray-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span class="text-sm">Real-time updates</span>
+        </div>
+      </div>
+    </div>
 
-    <td class="p-3">
-        {% if event.image_path %}
-            <img src="{{ url_for('static', filename=event.image_path.replace('\\','/')) }}" class="h-16 rounded">
-
-        {% else %}
-            -
-        {% endif %}
+    <!-- Table Content -->
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="text-gray-400 text-sm border-b border-gray-700 bg-gray-800/30">
+            <th class="px-6 py-4 text-left font-medium">Timestamp</th>
+            <th class="px-6 py-4 text-left font-medium">Camera</th>
+            <th class="px-6 py-4 text-left font-medium">Event</th>
+            <th class="px-6 py-4 text-left font-medium">Snapshot</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-700">
+          {% for event in events %}
+          <tr class="hover:bg-gray-800/30 transition-colors duration-150">
+            <td class="px-6 py-4">
+              <div class="text-sm">
+                <span class="font-medium text-primary-100">{{ event.display_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="flex items-center space-x-2">
+                <svg class="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                <span class="text-gray-300">Camera {{ event.cam_id }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400">
+                Fence Crossing
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              {% if event.image_path %}
+              <div class="relative group">
+                <img src="{{ url_for('static', filename=event.image_path.replace('\\','/')) }}"
+                     class="h-16 w-24 rounded-lg object-cover border border-gray-700 transition-transform hover:scale-105">
+                <div class="absolute inset-0 bg-primary-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              </div>
+              {% else %}
+              <span class="text-gray-500">-</span>
+              {% endif %}
     </td>
     </tr>
     {% endfor %}  

@@ -80,8 +80,13 @@ class DetectionManager:
     def _save_snapshot_and_log(self, frame, center, cam_id, track_id):
         """Saves a snapshot and logs the event to the database."""
         print(f"[ALERT] Intrusion detected by Object ID {track_id} on Camera {cam_id}!")
+
+        # Use local time for filename but UTC for database
+        local_time = datetime.now()
+        utc_time = datetime.utcnow()
         
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # Format filename using local time
+        timestamp = local_time.strftime("%Y%m%d_%H%M%S")
         img_name = f"intrusion_{cam_id}_{timestamp}_ID{track_id}.jpg"
         
         # Always forward slash for DB storage / URL
@@ -100,10 +105,14 @@ class DetectionManager:
         cv2.imwrite(img_full_path, snapshot)
         print(f"[INFO] Intrusion snapshot saved: {img_full_path}")
 
-        # Save to DB
+        # Save to DB using UTC time
         try:
             with self.app.app_context():
-                event = FenceCrossEvent(cam_id=str(cam_id), image_path=img_rel_path)
+                event = FenceCrossEvent(
+                    cam_id=str(cam_id), 
+                    image_path=img_rel_path,
+                    timestamp=utc_time  # Explicitly set UTC timestamp
+                )
                 db.session.add(event)
                 db.session.commit()
                 print(f"[INFO] Intrusion event logged for cam {cam_id}")

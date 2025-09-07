@@ -5,51 +5,182 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}IntrusionGuard{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <script>
-    function toggleMenu() {
-      document.getElementById("mobile-menu").classList.toggle("hidden");
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              800: '#5b21b6',
+            },
+          },
+        },
+      },
     }
   </script>
-
-
+  <style>
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    .gradient-bg {
+      background: linear-gradient(-45deg, #6d28d9, #4f46e5, #2563eb, #7c3aed);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+    }
+    
+    .nav-item {
+      position: relative;
+      padding: 0.5rem 0;
+    }
+    
+    .nav-item::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      bottom: 0;
+      left: 0;
+      background-color: #e0e7ff;
+      transform: scaleX(0);
+      transform-origin: bottom right;
+      transition: transform 0.3s;
+    }
+    
+    .nav-item:hover::after {
+      transform: scaleX(1);
+      transform-origin: bottom left;
+    }
+    
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+  {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body class="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 font-sans">
   <!-- Navbar -->
-  <nav class="bg-violet-700 text-white shadow-md">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <!-- Logo -->
-      <h1 class="text-2xl font-bold">IntrusionGuard</h1>
+  <nav class="gradient-bg text-white shadow-lg fixed w-full top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo -->
+        <div class="flex items-center space-x-3">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          <h1 class="text-2xl font-bold tracking-tight">IntrusionGuard</h1>
+        </div>
 
-      <!-- Desktop Menu -->
-      <ul class="hidden md:flex space-x-6">
-        <li><a href="{{ url_for('main.home') }}" class="hover:text-violet-300">Home</a></li>
-        <li><a href="{{ url_for('main.camera') }}" class="hover:text-violet-300">Camera</a></li>
-        <li><a href="{{ url_for('main.logs') }}" class="hover:text-violet-300">Logs</a></li>
-      </ul>
+        <!-- Desktop Menu -->
+        <ul class="hidden md:flex space-x-8">
+          <li><a href="{{ url_for('main.home') }}" class="nav-item hover:text-primary-100 transition-colors">Home</a></li>
+          <li><a href="{{ url_for('main.camera') }}" class="nav-item hover:text-primary-100 transition-colors">Camera</a></li>
+          <li><a href="{{ url_for('main.logs') }}" class="nav-item hover:text-primary-100 transition-colors">Logs</a></li>
+          <li><a href="{{ url_for('main.saved_snaps') }}" class="nav-item hover:text-primary-100 transition-colors">Captured Images</a></li>
+        </ul>
 
-      <!-- Mobile Hamburger -->
-      <button class="md:hidden focus:outline-none" onclick="toggleMenu()">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" 
-             viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" 
-                d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-      </button>
-    </div>
+        <!-- Mobile Hamburger -->
+        <button class="md:hidden focus:outline-none" onclick="toggleMenu()">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
 
-    <!-- Mobile Menu -->
-    <div id="mobile-menu" class="hidden md:hidden px-4 pb-4">
-      <ul class="space-y-4">
-        <li><a href="{{ url_for('main.home') }}" class="block hover:text-violet-300">Home</a></li>
-        <li><a href="{{ url_for('main.camera') }}" class="block hover:text-violet-300">Camera</a></li>
-        <li><a href="{{ url_for('main.logs') }}" class="block hover:text-violet-300">Logs</a></li>
-      </ul>
+      <!-- Mobile Menu -->
+      <div id="mobile-menu" class="hidden md:hidden py-4">
+        <div class="glass-panel rounded-lg p-4 space-y-3">
+          <a href="{{ url_for('main.home') }}" class="block px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">Home</a>
+          <a href="{{ url_for('main.camera') }}" class="block px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">Camera</a>
+          <a href="{{ url_for('main.logs') }}" class="block px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">Logs</a>
+          <a href="{{ url_for('main.saved_snaps') }}" class="block px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">Captured Images</a>
+        </div>
+      </div>
     </div>
   </nav>
 
   <!-- Page Content -->
-  <main class="max-w-7xl mx-auto px-6 py-10">
+  <main class="max-w-7xl mx-auto px-6 pt-24 pb-12">
     {% block content %}{% endblock %}
   </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-4 right-4 transform translate-y-full transition-transform duration-300 z-50">
+    <div class="bg-gray-800 text-white px-6 py-4 rounded-lg shadow-xl border border-gray-700">
+      <div class="flex items-center space-x-3">
+        <svg id="toast-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
+        <p id="toast-message" class="font-medium"></p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Scripts -->
+  <script>
+    // Toast notification system
+    class Toast {
+      constructor() {
+        this.toast = document.getElementById('toast');
+        this.icon = document.getElementById('toast-icon');
+        this.message = document.getElementById('toast-message');
+        this.timeout = null;
+      }
+      
+      show(type, text, duration = 3000) {
+        if (this.timeout) {
+          clearTimeout(this.timeout);
+        }
+        
+        if (type === 'success') {
+          this.toast.className = 'fixed bottom-4 right-4 z-50 bg-green-600 text-white px-6 py-4 rounded-lg shadow-xl transform transition-all duration-300';
+          this.icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
+        } else {
+          this.toast.className = 'fixed bottom-4 right-4 z-50 bg-red-600 text-white px-6 py-4 rounded-lg shadow-xl transform transition-all duration-300';
+          this.icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>';
+        }
+        
+        this.message.textContent = text;
+        this.toast.style.transform = 'translateY(0)';
+        
+        this.timeout = setTimeout(() => {
+          this.toast.style.transform = 'translateY(150%)';
+        }, duration);
+      }
+    }
+
+    // Initialize global toast
+    window.toast = new Toast();
+    
+    // Mobile menu with animation
+    function toggleMenu() {
+      const menu = document.getElementById('mobile-menu');
+      menu.classList.toggle('hidden');
+      
+      if (!menu.classList.contains('hidden')) {
+        menu.style.opacity = '0';
+        menu.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+          menu.style.opacity = '1';
+          menu.style.transform = 'translateY(0)';
+          menu.style.transition = 'all 0.3s ease-out';
+        }, 10);
+      }
+    }
+  </script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>
